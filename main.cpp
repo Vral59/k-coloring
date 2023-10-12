@@ -1,6 +1,67 @@
 #include <algorithm>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <string>
+#include <stdexcept>
 #include "include/Node.h"
 #include "include/Graph.h"
+
+/**
+ * @brief Lit un graphe à partir d'un fichier au format DIMACS et crée un objet Graph correspondant.
+ *
+ * Cette fonction prend en entrée un nom de fichier, extrait les informations du graphe au format DIMACS, puis crée et
+ * renvoie un objet Graph représentant le graphe.
+ *
+ * @param filename Le nom du fichier contenant les données du graphe au format DIMACS.
+ * @return Un objet Graph représentant le graphe extrait du fichier.
+ * @throw std::invalid_argument si le fichier ne peut pas être ouvert ou s'il y a des erreurs dans le format du fichier.
+ */
+Graph readGraphFromFile(const std::string& filename) {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        throw std::invalid_argument("Impossible d'ouvrir le fichier: " + filename);
+    }
+
+    int numNodes = 0;
+    int numEdges = 0;
+
+    std::string line; // Déclaration de la variable 'line'
+
+    while (std::getline(file, line)) {
+        if (line.find("p edge ") == 0) {
+            std::istringstream iss(line);
+            iss.ignore(7);
+            if (iss >> numNodes >> numEdges) {
+                std::cout << "numNodes: " << numNodes << ", numEdges: " << numEdges << std::endl;
+            } else {
+                std::cerr << "Impossible d'extraire numNodes et numEdges." << std::endl;
+            }
+            break;
+        } else {
+            continue;
+        }
+    }
+    // Creation du graphe
+    Graph graph(numNodes);
+
+    while (std::getline(file, line)) {
+        int u, v;
+        if (sscanf(line.c_str(), "e %d %d", &u, &v) == 2) {
+            if (u >= 1 && v >= 1) {
+                // Ajoutez les arêtes au graphe
+                graph.addEdge(u - 1, v - 1);
+            } else {
+                throw std::invalid_argument("Les IDs des arêtes doivent être supérieurs ou égaux à 1.");
+            }
+        } else {
+            throw std::invalid_argument("Impossible de lire les arêtes: " + filename);
+        }
+    }
+    file.close();
+    return graph;
+}
 
 /**
  * @brief Colorie le graphe avec un algorithme glouton en utilisant au plus k couleurs.
@@ -9,6 +70,7 @@
  * @param k Le nombre maximal de couleurs à utiliser.
  */
 void greedyColoring(Graph& graph, int k) {
+
     std::vector<Node>& nodes = graph.getNodes();
     int numNodes = graph.getNumNodes();
 
@@ -22,6 +84,7 @@ void greedyColoring(Graph& graph, int k) {
     std::sort(nodeIndices.begin(), nodeIndices.end(), [&nodes](int a, int b) {
         return nodes[a].getNeighbors().size() > nodes[b].getNeighbors().size();
     });
+
 
     std::vector<int> colorAssigned(numNodes, -1); // Initialise toutes les couleurs à -1 (non attribuées)
 
@@ -52,7 +115,9 @@ void greedyColoring(Graph& graph, int k) {
             std::vector<int> neighborColorCount(k, 0);
             for (int neighborID : node.getNeighbors()) {
                 int neighborColor = colorAssigned[neighborID];
-                neighborColorCount[neighborColor]++;
+                if (neighborColor != -1){
+                    neighborColorCount[neighborColor]++;
+                }
             }
 
             int minNeighborCount = k + 1;
@@ -63,30 +128,44 @@ void greedyColoring(Graph& graph, int k) {
                 }
             }
         }
-
         node.setColor(chosenColor); // Mettez à jour la couleur du noeud
         colorAssigned[i] = chosenColor;
     }
 }
 
-int main() {
-    // Creez un graphe avec 6 noeuds
-    Graph graph(6);
+int main(int argc, char* argv[]) {
 
-    // Ajoutez des arêtes au graphe (dans cet exemple, un graphe non orienté)
-    graph.addEdge(0, 1);
-    graph.addEdge(0, 2);
-    graph.addEdge(1, 3);
-    graph.addEdge(2, 3);
-    graph.addEdge(3, 4);
-    graph.addEdge(4, 5);
-    graph.addEdge(5, 0);
+    try {
+        std::string filename;
 
-    // Colorier le graphe
-    greedyColoring(graph, 3);
+        // Recherche de l'argument --file
+        for (int i = 1; i < argc; ++i) {
+            if (std::string(argv[i]) == "--file" && i + 1 < argc) {
+                filename = argv[i + 1];
+                break;
+            }
+        }
 
-    // Affichez le graphe
-    graph.displayGraph();
+        if (filename.empty()) {
+            std::cerr << "Utilisation : " << argv[0] << " --file <nom_du_fichier>" << std::endl;
+            return 1;
+        }
 
+        // Lecture du graphe depuis le fichier spécifié
+        Graph graph = readGraphFromFile(filename);
+
+        // Colorier le graphe
+        greedyColoring(graph, 5);
+
+        // Affichez le graphe
+        graph.displayGraph();
+
+        // Calcul du conflit dans le graphe colorié
+        std::cout << "Dans le graphe il y a : " << graph.countConflicts() << " conflit(s)" << std::endl;
+
+    } catch (const std::exception& e) {
+        std::cerr << "Erreur : " << e.what() << std::endl;
+        return 1;
+    }
     return 0;
 }
