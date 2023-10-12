@@ -8,7 +8,7 @@
 
 #include "Node.h"
 #include <vector>
-#include <stdexcept> // Pour les exceptions
+#include <stdexcept>
 
 /**
  * @class Graph
@@ -42,7 +42,7 @@ public:
      * @return Une référence vers le noeud.
      * @throw std::out_of_range si id est en dehors de la plage [0, numNodes-1].
      */
-    [[nodiscard]] Node& getNode(int id);
+    [[nodiscard]] const Node& getNode(int id) const;
 
     /**
      * @brief Obtient un vecteur de noeuds du graphe.
@@ -55,6 +55,12 @@ public:
      * @return Une référence constante vers le vecteur de noeuds.
      */
     [[nodiscard]] const std::vector<Node>& getNodes() const;
+
+    /**
+     * @brief Calcule le nombre de conflits dans le graphe.
+     * @return Le nombre de conflits (sommets voisins ayant la même couleur).
+     */
+    [[nodiscard]] int countConflicts() const;
 
     /**
      * @brief Affiche le contenu du graphe, y compris les noeuds, leurs couleurs et leurs voisins.

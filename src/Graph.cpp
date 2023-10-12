@@ -49,11 +49,10 @@ void Graph::addEdge(int u, int v) {
  * @return Une référence vers le noeud.
  * @throw std::out_of_range si id est en dehors de la plage [0, numNodes-1].
  */
-[[nodiscard]] Node& Graph::getNode(int id) {
+[[nodiscard]] const Node& Graph::getNode(int id) const {
     if (id < 0 || id >= numNodes) {
-        throw std::out_of_range("ID de noeud en dehors de la plage valide.");
+        throw std::out_of_range("ID de noeud hors de la plage valide.");
     }
-
     return nodes[id];
 }
 
@@ -72,6 +71,31 @@ std::vector<Node>& Graph::getNodes() {
 [[nodiscard]] const std::vector<Node>& Graph::getNodes() const {
     return nodes;
 }
+
+/**
+ * Calcule le nombre de conflits dans le graphe. Un conflit est défini comme un sommet ayant
+ * des voisins partageant la même couleur.
+ *
+ * @return Le nombre de conflits (sommets voisins ayant la même couleur).
+ */
+int Graph::countConflicts() const {
+    int conflictCount = 0;
+
+    for (const Node& node : nodes) {
+        int nodeColor = node.getColor();
+
+        for (int neighborID : node.getNeighbors()) {
+            const Node& neighbor = getNode(neighborID);
+
+            if (neighbor.getColor() == nodeColor) {
+                conflictCount++;
+            }
+        }
+    }
+
+    return conflictCount;
+}
+
 
 /**
  * @brief Affiche le contenu du graphe, y compris les noeuds, leurs couleurs et leurs voisins.
