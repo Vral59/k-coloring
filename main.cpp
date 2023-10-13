@@ -137,25 +137,29 @@ int main(int argc, char* argv[]) {
 
     try {
         std::string filename;
+        int k = -1;  // Ne pas initialiser avec une valeur par défaut
 
         // Recherche de l'argument --file
         for (int i = 1; i < argc; ++i) {
             if (std::string(argv[i]) == "--file" && i + 1 < argc) {
                 filename = argv[i + 1];
-                break;
+            }
+            // Recherche de l'argument --k
+            if (std::string(argv[i]) == "--k" && i + 1 < argc) {
+                k = std::stoi(argv[i + 1]);
             }
         }
 
-        if (filename.empty()) {
-            std::cerr << "Utilisation : " << argv[0] << " --file <nom_du_fichier>" << std::endl;
+        if (filename.empty() || k == -1) {
+            std::cerr << "Utilisation : " << argv[0] << " --file <nom_du_fichier> --k <valeur_de_k>" << std::endl;
             return 1;
         }
 
         // Lecture du graphe depuis le fichier spécifié
         Graph graph = readGraphFromFile(filename);
 
-        // Colorier le graphe
-        greedyColoring(graph, 5);
+        // Colorier le graphe avec la valeur de k
+        greedyColoring(graph, k);
 
         // Affichez le graphe
         graph.displayGraph();
@@ -169,3 +173,4 @@ int main(int argc, char* argv[]) {
     }
     return 0;
 }
+

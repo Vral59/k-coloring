@@ -52,15 +52,16 @@ make
 
 Pour exécuter le programme, utilisez la commande suivante :
 ```bash
-./nom_du_programme --file nom_du_fichier_dimacs
+./nom_du_programme --file nom_du_fichier_dimacs --k nombre_de_couleur
 ```
 
 - `nom_du_programme` est le nom de l'exécutable généré après compilation.
 - `nom_du_fichier_dimacs` est le fichier contenant les données du graphe au format DIMACS.
+- `nombre_de_couleur` est la valeur de k, le nombre de couleurs maximum qui peut être utilisé.
 
 Exemple :
 ```bash
-./coloration_graphes --file example.graph
+./coloration_graphes --file example.graph --k 5
 ```
 
 
