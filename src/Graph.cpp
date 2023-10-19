@@ -5,6 +5,10 @@
 
 #include <iostream>
 #include "../include/Graph.h"
+#include <random>
+#include <ctime>
+#include <algorithm>
+#include <chrono>
 
 /**
  * @brief Constructeur de la classe Graph.
@@ -120,5 +124,53 @@ void Graph::displayGraph() const {
             std::cout << neighborID << " ";
         }
         std::cout << std::endl;
+    }
+}
+
+/**
+ * @brief Change aléatoirement la couleur de plusieurs noeuds différents.
+ * @param numChange Nombre de noeud à changer.
+ * @param k Le nombre de couleur différents.
+ */
+void Graph::recolorNodes(int numChange, int k) {
+    // Vérifie si X est valide
+    if (numChange < 0) {
+        std::cerr << "Le nombre de noeuds à recolorier ne peut pas être negatif." << std::endl;
+        return;
+    }
+    // Initialise le générateur de nombres aléatoires avec une seed basée sur le temps actuel
+    unsigned seed = static_cast<unsigned>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    std::mt19937 rng(seed);
+    std::uniform_int_distribution<int> colorDist(0, k - 1);
+
+    // Crée un vecteur de nœuds ayant au moins un conflit
+    std::vector<Node*> nodesWithConflict;
+    for (Node& node : nodes) {
+        if (node.countConflict(*this) > 0) {
+            nodesWithConflict.push_back(&node);
+        }
+    }
+
+    // Vérifie si le nombre maximum de noeud possible à recolorier est plus petit que numChange
+    if (nodesWithConflict.size() < numChange) {
+        std::cerr << "Le nombre de noeuds à recolorier est trop eleve." << std::endl;
+        return;
+    }
+
+    // Mélange le vecteur pour choisir des noeuds aléatoirement
+    std::shuffle(nodesWithConflict.begin(), nodesWithConflict.end(), rng);
+
+    // Recolorie les X premiers nœuds
+    for (int i = 0; i < numChange; ++i) {
+        Node* node = nodesWithConflict[i];
+        int currentColor = node->getColor();
+        int newColor = colorDist(rng);
+
+        // Assurez-vous que la nouvelle couleur est différente de la couleur actuelle
+        while (newColor == currentColor) {
+            newColor = colorDist(rng);
+        }
+
+        node->setColor(newColor);
     }
 }

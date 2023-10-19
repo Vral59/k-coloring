@@ -166,8 +166,15 @@ int main(int argc, char* argv[]) {
         // Affichez le graphe
         graph.displayGraph();
 
+        // Exemple à faire du graph1.col du fonctionnement de la deepcopy d'un graphe et de sa recolorisation
+        std::cout << "Je vais recolorier un noeud aleatoirement" << std::endl;
+        Graph newGraph = graph.clone();
+        newGraph.recolorNodes(1, k);
+        newGraph.displayGraph();
+
         // Calcul du conflit dans le graphe colorié
         std::cout << "Dans le graphe il y a : " << graph.countConflicts() << " conflit(s)" << std::endl;
+        std::cout << "Dans le graphe recolorier il y a : " << newGraph.countConflicts() << " conflit(s)" << std::endl;
 
     } catch (const std::exception& e) {
         std::cerr << "Erreur : " << e.what() << std::endl;

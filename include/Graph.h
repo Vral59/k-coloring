@@ -79,6 +79,12 @@ public:
      */
     void displayGraph() const;
 
+    /**
+     * @brief Change aléatoirement la couleur de plusieurs noeuds différents.
+     * @param numChange Nombre de noeud à changer.
+     * @param k Le nombre de couleur différents.
+     */
+    void recolorNodes(int numChange, int k);
 
 private:
     int numNodes; // Le nombre de noeuds dans le graphe.
