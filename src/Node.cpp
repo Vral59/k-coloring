@@ -4,6 +4,7 @@
  */
 
 #include "../include/Node.h"
+#include "../include/Graph.h"
 
 /**
  * @brief Constructeur de la classe Node.
@@ -54,3 +55,42 @@ void Node::setColor(int c) {
 void Node::addNeighbor(int neighborID) {
     neighbors.push_back(neighborID);
 }
+
+/**
+ * @brief Crée une copie en profondeur du noeud.
+ * @return Une nouvelle instance de Node copiée en profondeur.
+ */
+Node Node::clone(){
+    Node clonedNode(id); // Crée une nouvelle instance de Node avec le même ID.
+    clonedNode.color = color;
+    // Copie en profondeur de la liste des voisins.
+    for (int neighborID : neighbors) {
+        clonedNode.addNeighbor(neighborID);
+    }
+    return clonedNode;
+}
+
+/**
+ * @brief Compte les conflits avec les noeuds voisins.
+ * @param g Le graphe sur lequel on travail
+ * @return Le nombre de conflit.
+ */
+int Node::countConflict(const Graph& g) const {
+    int conflictCount = 0;
+    int nodeColor = getColor();
+    for (int neighborID : neighbors) {
+        const Node& neighbor = g.getNode(neighborID);
+        if (neighbor.getColor() == nodeColor) {
+            conflictCount++;
+        }
+    }
+    return conflictCount;
+}
+
+/**
+ * @brief Constructeur de la classe Node.
+ * @param id l'ID du noeud
+ * @param color La couleur du noeud
+ */
+Node::Node(int id, int color) : id(id), color(color) {}
+

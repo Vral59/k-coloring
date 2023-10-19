@@ -9,6 +9,8 @@
 #include <list>
 #include <stdexcept> // Pour les exceptions
 
+class Graph;  // Avant-déclaration de la classe Graph
+
 /**
  * @class Node
  * @brief Représente un noeud dans un graphe.
@@ -51,6 +53,26 @@ public:
      * @param neighborID L'ID du noeud voisin à ajouter.
      */
     void addNeighbor(int neighborID);
+
+    /**
+     * @brief Crée une copie en profondeur du noeud.
+     * @return Une nouvelle instance de Node copiée en profondeur.
+     */
+    [[nodiscard]] Node clone();
+
+    /**
+     * @brief Compte les conflits avec les noeuds voisins.
+     * @param g Le graphe sur lequel on travail
+     * @return Le nombre de conflit.
+     */
+    [[nodiscard]] int countConflict(const Graph& g) const;
+
+    /**
+     * @brief Constructeur de la classe Node.
+     * @param id l'ID du noeud
+     * @param color La couleur du noeud
+     */
+    Node(int id, int color);
 
 private:
     int id; // L'ID du noeud.

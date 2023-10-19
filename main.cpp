@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include "include/Node.h"
 #include "include/Graph.h"
+#include <random>
 
 /**
  * @brief Lit un graphe à partir d'un fichier au format DIMACS et crée un objet Graph correspondant.
@@ -132,6 +133,7 @@ void greedyColoring(Graph& graph, int k) {
         colorAssigned[i] = chosenColor;
     }
 }
+
 
 int main(int argc, char* argv[]) {
 

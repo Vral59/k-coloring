@@ -16,7 +16,7 @@
  */
 class Graph {
 public:
-    /**
+/**
      * @brief Constructeur de la classe Graph.
      * @param numNodes Le nombre de noeuds dans le graphe.
      * @throw std::invalid_argument si numNodes est négatif.
@@ -63,9 +63,22 @@ public:
     [[nodiscard]] int countConflicts() const;
 
     /**
+     * @brief Ajoute un noeud au graphe.
+     * @param n le noeud à ajouter.
+     */
+    void addNode(const Node& n);
+
+    /**
+     * @brief Crée une copie en profondeur du graphe.
+     * @return Une nouvelle instance de Graph copiée en profondeur.
+     */
+    [[nodiscard]] Graph clone();
+
+    /**
      * @brief Affiche le contenu du graphe, y compris les noeuds, leurs couleurs et leurs voisins.
      */
     void displayGraph() const;
+
 
 private:
     int numNodes; // Le nombre de noeuds dans le graphe.

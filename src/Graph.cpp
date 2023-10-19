@@ -73,29 +73,41 @@ std::vector<Node>& Graph::getNodes() {
 }
 
 /**
- * Calcule le nombre de conflits dans le graphe. Un conflit est défini comme un sommet ayant
+ * @brief Calcule le nombre de conflits dans le graphe. Un conflit est défini comme un sommet ayant
  * des voisins partageant la même couleur.
- *
  * @return Le nombre de conflits (sommets voisins ayant la même couleur).
  */
 int Graph::countConflicts() const {
     int conflictCount = 0;
 
     for (const Node& node : nodes) {
-        int nodeColor = node.getColor();
-
-        for (int neighborID : node.getNeighbors()) {
-            const Node& neighbor = getNode(neighborID);
-
-            if (neighbor.getColor() == nodeColor) {
-                conflictCount++;
-            }
-        }
+        conflictCount += node.countConflict(*this);
     }
 
-    return conflictCount;
+    return conflictCount/2;
 }
 
+/**
+ * @brief Ajoute un noeud au graphe.
+ * @param n le noeud à ajouter.
+ */
+void Graph::addNode(const Node& n){
+    numNodes++;
+    nodes.push_back(n);
+}
+
+/**
+ * @brief Crée une copie en profondeur du graphe.
+ * @return Une nouvelle instance de Graph copiée en profondeur.
+ */
+Graph Graph::clone(){
+    Graph clonedGraph(0);
+    // Copie en profondeur des nœuds.
+    for (Node& originalNode : nodes) {
+        clonedGraph.addNode(originalNode.clone());
+    }
+    return clonedGraph;
+}
 
 /**
  * @brief Affiche le contenu du graphe, y compris les noeuds, leurs couleurs et leurs voisins.
@@ -104,8 +116,8 @@ void Graph::displayGraph() const {
     for (int i = 0; i < numNodes; i++) {
         const Node& node = nodes[i];
         std::cout << "Node " << i << " - Color: " << node.getColor() << " - Neighbors: ";
-        for (int neighbor : node.getNeighbors()) {
-            std::cout << neighbor << " ";
+        for (int neighborID : node.getNeighbors()) {
+            std::cout << neighborID << " ";
         }
         std::cout << std::endl;
     }
