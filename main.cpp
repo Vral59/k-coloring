@@ -134,6 +134,48 @@ void greedyColoring(Graph& graph, int k) {
     }
 }
 
+Graph simulatedAnnealing(Graph& graph, int k, double initTemp, double coolingRate, int maxIter, int nb_changes) {
+
+//initialisation des paramètres et de la solution courante
+Graph currentSol = graph.clone();
+Graph best_sol_encountered = graph.clone();
+double currentCost = currentSol.countConflicts();
+double best_value_encountered = best_sol_encountered.countConflicts();
+double temperature = initTemp;
+double random_rate = 0;
+
+//itérations de l'algo de recuit simulé
+for (int i = 0; i < maxIter; i++) {
+
+//génération du voisin aléatoire
+Graph newSol = currentSol.clone(); 
+newSol.recolorNodes(nb_changes,k);
+double newCost = newSol.countConflicts();
+
+// choix de garder ou non ce voisin
+if (newCost < currentCost) {
+currentSol = newSol.clone();
+currentCost = newCost;
+} else {
+double acceptanceProbability = exp((currentCost - newCost) / temperature);
+srand(time(NULL));
+random_rate = (double)rand() / (double)RAND_MAX;
+if (random_rate < acceptanceProbability) {
+currentSol = newSol.clone();
+currentCost = newCost;
+}
+}
+if (newCost < best_value_encountered) {
+    best_sol_encountered = newSol.clone();
+    best_value_encountered = newCost;
+}
+temperature *= coolingRate;
+}
+
+return best_sol_encountered;
+}
+
+
 
 int main(int argc, char* argv[]) {
 
@@ -175,11 +217,18 @@ int main(int argc, char* argv[]) {
         // Calcul du conflit dans le graphe colorié
         std::cout << "Dans le graphe il y a : " << graph.countConflicts() << " conflit(s)" << std::endl;
         std::cout << "Dans le graphe recolorier il y a : " << newGraph.countConflicts() << " conflit(s)" << std::endl;
+        
+        // test recuit simulé
+        Graph test_annealing = simulatedAnnealing(newGraph, k, 10000, 0.9, 5000, 1);
+        std::cout << "Dans le graphe après recuit il y a : " << test_annealing.countConflicts() << " conflit(s)" << std::endl;
+
+
 
     } catch (const std::exception& e) {
         std::cerr << "Erreur : " << e.what() << std::endl;
         return 1;
     }
+
     return 0;
 }
 
