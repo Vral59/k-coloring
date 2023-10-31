@@ -16,12 +16,24 @@
  */
 class Graph {
 public:
-/**
+    /**
      * @brief Constructeur de la classe Graph.
      * @param numNodes Le nombre de noeuds dans le graphe.
      * @throw std::invalid_argument si numNodes est négatif.
      */
     explicit Graph(int numNodes);
+
+    /**
+     * @brief Met à jour le tableau conflictCount en entier avec la colorisation actuelle du graphe.
+     * Un conflit est défini comme un sommet ayant des voisins partageant la même couleur.
+     */
+    void setConflictCount();
+
+    /**
+     * @brief Met à jour le tableau conflictCount en entier avec le vecteur donné en paramètre.
+     * @param conflictVector vecteur de conflit à mettre dans notre graphe
+     */
+    void setConflictCount(std::vector<int> conflictVector);
 
     /**
      * @brief Ajoute une arête entre deux noeuds du graphe.
@@ -49,6 +61,12 @@ public:
      * @return Une référence vers le vecteur de noeuds.
      */
     std::vector<Node>& getNodes();
+
+    /**
+     * @brief Obtient un vecteur de conflit pour chaque noeud.
+     * @return Une référence vers le vecteur de conflits.
+     */
+    std::vector<int>& getConflictCount();
 
     /**
      * @brief Obtient un vecteur de noeuds du graphe (constante).
@@ -89,6 +107,7 @@ public:
 private:
     int numNodes; // Le nombre de noeuds dans le graphe.
     std::vector<Node> nodes; // Le vecteur de noeuds du graphe.
+    std::vector<int> conflictCount; // Le vecteur qui compte les conflits du graphe.
 };
 
 #endif

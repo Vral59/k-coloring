@@ -20,10 +20,15 @@ Graph::Graph(int numNodes) : numNodes(numNodes) {
         throw std::invalid_argument("Le nombre de noeuds ne peut pas être négatif.");
     }
 
+    // Initialise conflictCount avec des zéros en fonction de la taille de numNodes
+    conflictCount.resize(numNodes, 0);
     for (int i = 0; i < numNodes; i++) {
         nodes.emplace_back(i);
     }
+
 }
+
+
 
 /**
  * @brief Ajoute une arête entre deux noeuds du graphe.
@@ -47,6 +52,7 @@ void Graph::addEdge(int u, int v) {
     return numNodes;
 }
 
+
 /**
  * @brief Obtient un noeud spécifique du graphe.
  * @param id L'ID du noeud à récupérer.
@@ -68,6 +74,15 @@ std::vector<Node>& Graph::getNodes() {
     return nodes;
 }
 
+
+/**
+ * @brief Obtient un vecteur de conflit pour chaque noeud.
+ * @return Une référence vers le vecteur de conflits.
+ */
+std::vector<int>& Graph::getConflictCount() {
+    return conflictCount;
+}
+
 /**
  * @brief Obtient un vecteur de noeuds du graphe (constante).
  * @return Une référence constante vers le vecteur de noeuds.
@@ -77,18 +92,37 @@ std::vector<Node>& Graph::getNodes() {
 }
 
 /**
- * @brief Calcule le nombre de conflits dans le graphe. Un conflit est défini comme un sommet ayant
- * des voisins partageant la même couleur.
+ * @brief Met à jour le tableau conflictCount en entier avec la colorisation actuelle du graphe.
+ * Un conflit est défini comme un sommet ayant des voisins partageant la même couleur.
+ */
+void Graph::setConflictCount() {
+    for (const Node& node : nodes) {
+        conflictCount[node.getID()] = node.countConflict(*this);
+    }
+}
+
+
+/**
+ * @brief Met à jour le tableau conflictCount en entier avec le vecteur donné en paramètre.
+ * @param conflictVector vecteur de conflit à mettre dans notre graphe
+ */
+void Graph::setConflictCount(std::vector<int> conflictVector) {
+    for (const Node& node : nodes) {
+        int id = node.getID();
+        conflictCount[id] = conflictVector[id];
+    }
+}
+
+/**
+ * @brief Calcule le nombre de conflits dans le graphe.
  * @return Le nombre de conflits (sommets voisins ayant la même couleur).
  */
 int Graph::countConflicts() const {
-    int conflictCount = 0;
-
-    for (const Node& node : nodes) {
-        conflictCount += node.countConflict(*this);
+    int conflictCpt = 0;
+    for (int i = 0; i < nodes.size(); ++i) {
+        conflictCpt += conflictCount[i];
     }
-
-    return conflictCount/2;
+    return conflictCpt / 2;
 }
 
 /**
@@ -110,6 +144,10 @@ Graph Graph::clone(){
     for (Node& originalNode : nodes) {
         clonedGraph.addNode(originalNode.clone());
     }
+    // Initialise le vecteur conflictCount de la copie avec la même taille que le vecteur original
+    clonedGraph.conflictCount.resize(numNodes, 0);
+    // Met à jour le vecteur conflictCount de la copie
+    clonedGraph.setConflictCount(conflictCount);
     return clonedGraph;
 }
 
@@ -125,6 +163,12 @@ void Graph::displayGraph() const {
         }
         std::cout << std::endl;
     }
+
+    std::cout << "Contenu de conflit : ";
+    for (int i = 0; i < numNodes; i++) {
+        std::cout << conflictCount[i] << " ";
+    }
+    std::cout << std::endl;
 }
 
 /**
@@ -141,12 +185,17 @@ void Graph::recolorNodes(int numChange, int k) {
     // Initialise le générateur de nombres aléatoires avec une seed basée sur le temps actuel
     unsigned seed = static_cast<unsigned>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
     std::mt19937 rng(seed);
-    std::uniform_int_distribution<int> colorDist(0, k - 1);
 
+    // Création d'une liste des couleurs
+    std::vector<int> colorList;
+    colorList.reserve(k);
+    for (int i = 0; i < k; ++i) {
+        colorList.push_back(i);
+    }
     // Crée un vecteur de nœuds ayant au moins un conflit
     std::vector<Node*> nodesWithConflict;
     for (Node& node : nodes) {
-        if (node.countConflict(*this) > 0) {
+        if (conflictCount[node.getID()] > 0) {
             nodesWithConflict.push_back(&node);
         }
     }
@@ -164,11 +213,26 @@ void Graph::recolorNodes(int numChange, int k) {
     for (int i = 0; i < numChange; ++i) {
         Node* node = nodesWithConflict[i];
         int currentColor = node->getColor();
-        int newColor = colorDist(rng);
+        // On mélange aléatoirement la liste des couleurs
+        std::shuffle(colorList.begin(), colorList.end(), rng);
+        // La nouvelle couleur du noeud est la première couleur de la liste
+        int newColor = colorList[0];
+        // Si cette couleur était la même que l'ancienne, on prend la couleur suivante
+        if (newColor == currentColor){
+            newColor = colorList[1];
+        }
 
-        // Assurez-vous que la nouvelle couleur est différente de la couleur actuelle
-        while (newColor == currentColor) {
-            newColor = colorDist(rng);
+        // Mettez à jour conflictCount en conséquence
+        for (int neighborID : node->getNeighbors()) {
+            const Node& neighbor = getNode(neighborID);
+            if (neighbor.getColor() == currentColor) {
+                conflictCount[neighborID]--; // Réduction du conflit
+                conflictCount[node->getID()]--;
+            }
+            if (neighbor.getColor() == newColor) {
+                conflictCount[neighborID]++; // Augmentation du conflit
+                conflictCount[node->getID()]++;
+            }
         }
 
         node->setColor(newColor);
