@@ -132,45 +132,60 @@ void greedyColoring(Graph& graph, int k) {
         node.setColor(chosenColor); // Mettez à jour la couleur du noeud
         colorAssigned[i] = chosenColor;
     }
+    graph.setConflictCount();
 }
 
+/**
+ * @brief Algorithme du récuit simulé.
+ * @param graph Graphe à colorier.
+ * @param k Le nombre de couleur utilisable.
+ * @param initTemp La température initiale.
+ * @param coolingRate Le coefficient de refroidissement.
+ * @param maxIter Le nombre maximum d'itération.
+ * @param nb_changes Nombre de changement de couleur dans le voisinage.
+ * @return Le graphe colorié à la fin de l'algorithme.
+ */
 Graph simulatedAnnealing(Graph& graph, int k, double initTemp, double coolingRate, int maxIter, int nb_changes) {
 
-//initialisation des paramètres et de la solution courante
-Graph currentSol = graph.clone();
-Graph best_sol_encountered = graph.clone();
-double currentCost = currentSol.countConflicts();
-double best_value_encountered = best_sol_encountered.countConflicts();
-double temperature = initTemp;
-double random_rate = 0;
+    //initialisation des paramètres et de la solution courante
+    Graph currentSol = graph.clone();
+    Graph best_sol_encountered = graph.clone();
+    double currentCost = currentSol.countConflicts();
+    double best_value_encountered = best_sol_encountered.countConflicts();
+    double temperature = initTemp;
 
-//itérations de l'algo de recuit simulé
-for (int i = 0; i < maxIter; i++) {
+    // Utilisation de random_device pour générer une graine aléatoire
+    std::random_device rd;
+    std::default_random_engine generator(rd());
+    std::uniform_real_distribution<double> distribution(0.0, 1.0);
 
-//génération du voisin aléatoire
-Graph newSol = currentSol.clone(); 
-newSol.recolorNodes(nb_changes,k);
-double newCost = newSol.countConflicts();
+    //itérations de l'algo de recuit simulé
+    for (int i = 0; i < maxIter; i++) {
+        //génération du voisin aléatoire
+        Graph newSol = currentSol.clone();
+        newSol.recolorNodes(nb_changes,k);
+        double newCost = newSol.countConflicts();
 
-// choix de garder ou non ce voisin
-if (newCost < currentCost) {
-currentSol = newSol.clone();
-currentCost = newCost;
-} else {
-double acceptanceProbability = exp((currentCost - newCost) / temperature);
-srand(time(NULL));
-random_rate = (double)rand() / (double)RAND_MAX;
-if (random_rate < acceptanceProbability) {
-currentSol = newSol.clone();
-currentCost = newCost;
-}
-}
-if (newCost < best_value_encountered) {
-    best_sol_encountered = newSol.clone();
-    best_value_encountered = newCost;
-}
-temperature *= coolingRate;
-}
+        // choix de garder ou non ce voisin
+        if (newCost < currentCost) {
+            currentSol = newSol.clone();
+            currentCost = newCost;
+        }
+        else {
+            double acceptanceProbability = exp((currentCost - newCost) / temperature);
+            double randomRate = distribution(generator);
+
+            if (randomRate < acceptanceProbability) {
+                currentSol = newSol.clone();
+                currentCost = newCost;
+            }
+        }
+        if (newCost < best_value_encountered) {
+            best_sol_encountered = newSol.clone();
+            best_value_encountered = newCost;
+        }
+        temperature *= coolingRate;
+    }
 
 return best_sol_encountered;
 }
@@ -208,20 +223,12 @@ int main(int argc, char* argv[]) {
         // Affichez le graphe
         graph.displayGraph();
 
-        // Exemple à faire du graph1.col du fonctionnement de la deepcopy d'un graphe et de sa recolorisation
-        std::cout << "Je vais recolorier un noeud aleatoirement" << std::endl;
-        Graph newGraph = graph.clone();
-        newGraph.recolorNodes(1, k);
-        newGraph.displayGraph();
-
         // Calcul du conflit dans le graphe colorié
-        std::cout << "Dans le graphe il y a : " << graph.countConflicts() << " conflit(s)" << std::endl;
-        std::cout << "Dans le graphe recolorier il y a : " << newGraph.countConflicts() << " conflit(s)" << std::endl;
+        std::cout << "Dans le graphe il y a : " << graph.countConflicts() << " conflit(s) en utilisant l'heuristique" << std::endl;
         
         // test recuit simulé
-        Graph test_annealing = simulatedAnnealing(newGraph, k, 10000, 0.9, 5000, 1);
-        std::cout << "Dans le graphe après recuit il y a : " << test_annealing.countConflicts() << " conflit(s)" << std::endl;
-
+        Graph test_annealing = simulatedAnnealing(graph, k, 10000, 0.9, 5000, 1);
+        std::cout << "Dans le graphe apres recuit il y a : " << test_annealing.countConflicts() << " conflit(s)" << std::endl;
 
 
     } catch (const std::exception& e) {
