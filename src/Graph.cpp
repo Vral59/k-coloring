@@ -6,9 +6,7 @@
 #include <iostream>
 #include "../include/Graph.h"
 #include <random>
-#include <ctime>
 #include <algorithm>
-#include <chrono>
 
 /**
  * @brief Constructeur de la classe Graph.
@@ -27,7 +25,6 @@ Graph::Graph(int numNodes) : numNodes(numNodes) {
     }
 
 }
-
 
 
 /**
@@ -175,16 +172,14 @@ void Graph::displayGraph() const {
  * @brief Change aléatoirement la couleur de plusieurs noeuds différents.
  * @param numChange Nombre de noeud à changer.
  * @param k Le nombre de couleur différents.
+ * @param rng Générateur de nombres aléatoires.
  */
-void Graph::recolorNodes(int numChange, int k) {
+void Graph::recolorNodes(int numChange, int k, std::mt19937 rng) {
     // Vérifie si X est valide
     if (numChange < 0) {
         std::cerr << "Le nombre de noeuds à recolorier ne peut pas être negatif." << std::endl;
         return;
     }
-    // Initialise le générateur de nombres aléatoires avec une seed basée sur le temps actuel
-    unsigned seed = static_cast<unsigned>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
-    std::mt19937 rng(seed);
 
     // Création d'une liste des couleurs
     std::vector<int> colorList;
@@ -200,10 +195,9 @@ void Graph::recolorNodes(int numChange, int k) {
         }
     }
 
-    // Vérifie si le nombre maximum de noeud possible à recolorier est plus petit que numChange
-    if (nodesWithConflict.size() < numChange) {
-        std::cerr << "Le nombre de noeuds à recolorier est trop eleve." << std::endl;
-        return;
+    // Si numChange est plus grand que le nombre de noeud en conflit, on change numChange
+    if (nodesWithConflict.size() < static_cast<std::vector<Node*>::size_type>(numChange)) {
+        numChange = static_cast<int>(nodesWithConflict.size());
     }
 
     // Mélange le vecteur pour choisir des noeuds aléatoirement

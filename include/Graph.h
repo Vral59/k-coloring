@@ -9,6 +9,8 @@
 #include "Node.h"
 #include <vector>
 #include <stdexcept>
+#include <chrono>
+#include <random>
 
 /**
  * @class Graph
@@ -22,6 +24,12 @@ public:
      * @throw std::invalid_argument si numNodes est négatif.
      */
     explicit Graph(int numNodes);
+
+    /**
+     * @brief Constructeur par défaut de la classe Graph.
+     * Initialise le graphe avec un nombre de nœuds égal à zéro.
+     */
+    Graph() : numNodes(0) {}
 
     /**
      * @brief Met à jour le tableau conflictCount en entier avec la colorisation actuelle du graphe.
@@ -101,8 +109,9 @@ public:
      * @brief Change aléatoirement la couleur de plusieurs noeuds différents.
      * @param numChange Nombre de noeud à changer.
      * @param k Le nombre de couleur différents.
+     * @param rng Générateur de nombres aléatoires (avec une valeur par défaut).
      */
-    void recolorNodes(int numChange, int k);
+    void recolorNodes(int numChange, int k, std::mt19937 rng);
 
 private:
     int numNodes; // Le nombre de noeuds dans le graphe.
