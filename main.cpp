@@ -1,3 +1,4 @@
+
 #include <algorithm>
 #include <iostream>
 #include <fstream>
@@ -156,7 +157,8 @@ Graph simulatedAnnealing(Graph& graph, int k, double initTemp, double coolingRat
     double currentCost = currentSol.countConflicts();
     double best_value_encountered = best_sol_encountered.countConflicts();
     double temperature = initTemp;
-
+    int index_best_sol = 0;
+    int index_last_change = 0;
     // Creation d'une seed aléatoire différente dans chaque thread
     unsigned seed = static_cast<unsigned>(
             std::chrono::high_resolution_clock::now().time_since_epoch().count() +
@@ -175,6 +177,8 @@ Graph simulatedAnnealing(Graph& graph, int k, double initTemp, double coolingRat
         if (newCost < currentCost) {
             currentSol = newSol.clone();
             currentCost = newCost;
+            index_best_sol = i;
+            index_last_change = i;
         }
         else {
             double acceptanceProbability = exp((currentCost - newCost) / temperature);
@@ -183,15 +187,18 @@ Graph simulatedAnnealing(Graph& graph, int k, double initTemp, double coolingRat
             if (randomRate < acceptanceProbability) {
                 currentSol = newSol.clone();
                 currentCost = newCost;
+                index_last_change = i;
             }
         }
         if (newCost < best_value_encountered) {
             best_sol_encountered = newSol.clone();
             best_value_encountered = newCost;
         }
-        temperature *= coolingRate;
+        if ((i % 10) == 0){
+            temperature *= coolingRate;}
     }
-
+std::cout << "nb d'iterations pour meilleure solution " << index_best_sol << std::endl;
+std::cout << "nb d'iterations au dernier changement de solution courante " << index_last_change << std::endl;
 return best_sol_encountered;
 }
 
@@ -245,7 +252,7 @@ int main(int argc, char* argv[]) {
         // Recuit simulée sans multi-threading
         // Enregistrez l'heure actuelle avant d'appeler la fonction
         auto start_time = std::chrono::high_resolution_clock::now();
-        Graph test_annealing = simulatedAnnealing(graph, k, 10000, 0.9, 5000, 1);
+        Graph test_annealing = simulatedAnnealing(graph, k, 1000, 0.99, 75000, 1);
         // Enregistrez l'heure actuelle après l'exécution de la fonction
         auto end_time = std::chrono::high_resolution_clock::now();
 
@@ -270,7 +277,7 @@ int main(int argc, char* argv[]) {
         threads.reserve(numThreads);
         auto start_time_thread = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < numThreads; ++i) {
-            threads.emplace_back(runSimulatedAnnealing, i, 10000, 0.9, 5000, 1);
+            threads.emplace_back(runSimulatedAnnealing, i, 1000, 0.99, 75000, 1);
         }
 
         // Joindre tous les threads et attendre qu'ils finissent
