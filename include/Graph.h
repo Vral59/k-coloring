@@ -113,6 +113,8 @@ public:
      */
     void recolorNodes(int numChange, int k, std::mt19937 rng);
 
+    void recolorAllNodes(int numChange, int k, std::mt19937 rng);
+
 private:
     int numNodes; // Le nombre de noeuds dans le graphe.
     std::vector<Node> nodes; // Le vecteur de noeuds du graphe.

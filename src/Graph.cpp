@@ -232,3 +232,48 @@ void Graph::recolorNodes(int numChange, int k, std::mt19937 rng) {
         node->setColor(newColor);
     }
 }
+
+void Graph::recolorAllNodes(int numChange, int k, std::mt19937 rng){
+    if (numChange < 0) {
+        std::cerr << "Le nombre de noeuds à recolorier ne peut pas être negatif." << std::endl;
+        return;
+    }
+
+    std::uniform_int_distribution<int> distribution(0, numNodes-1);
+
+    // Création d'une liste des couleurs
+    std::vector<int> colorList;
+    colorList.reserve(k);
+    for (int i = 0; i < k; ++i) {
+        colorList.push_back(i);
+    }
+
+    for (int i = 0; i < numChange; i++){
+        Node& node = nodes[distribution(rng)];
+        int currentColor = node.getColor();
+
+        // On mélange aléatoirement la liste des couleurs
+        std::shuffle(colorList.begin(), colorList.end(), rng);
+        // La nouvelle couleur du noeud est la première couleur de la liste
+        int newColor = colorList[0];
+        // Si cette couleur était la même que l'ancienne, on prend la couleur suivante
+        if (newColor == currentColor){
+            newColor = colorList[1];
+        }
+
+        // Mettez à jour conflictCount en conséquence
+        for (int neighborID : node.getNeighbors()) {
+            const Node& neighbor = getNode(neighborID);
+            if (neighbor.getColor() == currentColor) {
+                conflictCount[neighborID]--; // Réduction du conflit
+                conflictCount[node.getID()]--;
+            }
+            if (neighbor.getColor() == newColor) {
+                conflictCount[neighborID]++; // Augmentation du conflit
+                conflictCount[node.getID()]++;
+            }
+        }
+        node.setColor(newColor);
+    }
+
+}
