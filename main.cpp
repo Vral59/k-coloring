@@ -161,6 +161,7 @@ Graph simulatedAnnealing(Graph& graph, int k, double initTemp, double coolingRat
     double temperature = initTemp;
     int index_best_sol = 0;
     int index_last_change = 0;
+    long long bestSolTime = 0;
     // Creation d'une seed aléatoire différente dans chaque thread
     unsigned seed = static_cast<unsigned>(
             std::chrono::high_resolution_clock::now().time_since_epoch().count() +
@@ -184,6 +185,9 @@ Graph simulatedAnnealing(Graph& graph, int k, double initTemp, double coolingRat
             currentCost = newCost;
             index_best_sol = i;
             index_last_change = i;
+            auto currentTime = std::chrono::high_resolution_clock::now();
+            bestSolTime = std::chrono::duration_cast<std::chrono::seconds>(currentTime - startTime).count();
+
         }
         else {
             double acceptanceProbability = exp((currentCost - newCost) / temperature);
@@ -212,8 +216,10 @@ Graph simulatedAnnealing(Graph& graph, int k, double initTemp, double coolingRat
         }
     }
     std::cout << "nb d'iterations pour meilleure solution: " << index_best_sol << std::endl;
+    std::cout << "Temps pour meilleure solution: " << bestSolTime << std::endl;
     std::cout << "nb d'iterations au dernier changement de solution courante: " << index_last_change << std::endl;
     std::cout << "Temperature finale: " << temperature << std::endl;
+
     return best_sol_encountered;
 }
 
@@ -281,42 +287,42 @@ int main(int argc, char* argv[]) {
 
         // Recuit simulée avec multi-threading
         // Stocke les différents résultats de chaque graphs
-        std::vector<Graph> results(numThreads);
-
-        // Fonction pour exécuter les recuit simulées
-        auto runSimulatedAnnealing = [&](int threadIndex, int initTemp, float coolingRate, int maxIter,
-                                         int nb_changes) {
-            results[threadIndex] = simulatedAnnealing(graph, k, initTemp, coolingRate, maxIter, nb_changes);
-        };
-
-        std::vector<std::thread> threads;
-
-        // Lancer les différents threads
-        threads.reserve(numThreads);
-        auto start_time_thread = std::chrono::high_resolution_clock::now();
-        for (int i = 0; i < numThreads; ++i) {
-            threads.emplace_back(runSimulatedAnnealing, i, 1000, 0.999, 75000, 1);
-        }
-
-        // Joindre tous les threads et attendre qu'ils finissent
-        for (auto &thread: threads) {
-            thread.join();
-        }
-
-        auto end_time_thread = std::chrono::high_resolution_clock::now();
-
-        // Calculez la durée d'exécution en microsecondes (ou autre unité au choix)
-        std::chrono::duration<double> duration_thread = std::chrono::duration_cast<std::chrono::duration<double>>(
-                end_time_thread - start_time_thread);
-        // Affichez le temps d'exécution
-        std::cout << "Temps d'execution pour " << numThreads << " : " << duration_thread.count() << " secondes"
-                  << std::endl;
-
-
-        for (int i = 0; i < numThreads; ++i) {
-            std::cout << "Resultat du thread " << i << ": ";
-            std::cout << "Conflits: " << results[i].countConflicts() << std::endl;
-        }
+//        std::vector<Graph> results(numThreads);
+//
+//        // Fonction pour exécuter les recuit simulées
+//        auto runSimulatedAnnealing = [&](int threadIndex, int initTemp, float coolingRate, int maxIter,
+//                                         int nb_changes) {
+//            results[threadIndex] = simulatedAnnealing(graph, k, initTemp, coolingRate, maxIter, nb_changes);
+//        };
+//
+//        std::vector<std::thread> threads;
+//
+//        // Lancer les différents threads
+//        threads.reserve(numThreads);
+//        auto start_time_thread = std::chrono::high_resolution_clock::now();
+//        for (int i = 0; i < numThreads; ++i) {
+//            threads.emplace_back(runSimulatedAnnealing, i, 1000, 0.999, 75000, 1);
+//        }
+//
+//        // Joindre tous les threads et attendre qu'ils finissent
+//        for (auto &thread: threads) {
+//            thread.join();
+//        }
+//
+//        auto end_time_thread = std::chrono::high_resolution_clock::now();
+//
+//        // Calculez la durée d'exécution en microsecondes (ou autre unité au choix)
+//        std::chrono::duration<double> duration_thread = std::chrono::duration_cast<std::chrono::duration<double>>(
+//                end_time_thread - start_time_thread);
+//        // Affichez le temps d'exécution
+//        std::cout << "Temps d'execution pour " << numThreads << " : " << duration_thread.count() << " secondes"
+//                  << std::endl;
+//
+//
+//        for (int i = 0; i < numThreads; ++i) {
+//            std::cout << "Resultat du thread " << i << ": ";
+//            std::cout << "Conflits: " << results[i].countConflicts() << std::endl;
+//        }
 
     } catch (const std::exception &e) {
         std::cerr << "Erreur : " << e.what() << std::endl;
