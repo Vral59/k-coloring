@@ -1,4 +1,3 @@
-
 #include <algorithm>
 #include <iostream>
 #include <fstream>
@@ -151,6 +150,9 @@ void greedyColoring(Graph& graph, int k) {
  */
 Graph simulatedAnnealing(Graph& graph, int k, double initTemp, double coolingRate, int maxIter, int nb_changes) {
 
+    // Définir la durée maximale d'exécution à 10 minutes (600 secondes)
+    const int maxExecutionTimeInSeconds = 6000;
+
     //initialisation des paramètres et de la solution courante
     Graph currentSol = graph.clone();
     Graph best_sol_encountered = graph.clone();
@@ -166,11 +168,14 @@ Graph simulatedAnnealing(Graph& graph, int k, double initTemp, double coolingRat
     std::mt19937 rng(seed);
     std::uniform_real_distribution<double> distribution(0.0, 1.0);
 
+    // Récupérer le moment où l'algorithme a commencé à s'exécuter
+    auto startTime = std::chrono::high_resolution_clock::now();
+
     //itérations de l'algo de recuit simulé
     for (int i = 0; i < maxIter; i++) {
         //génération du voisin aléatoire
         Graph newSol = currentSol.clone();
-        newSol.recolorNodes(nb_changes, k, rng);
+        newSol.recolorAllNodes(nb_changes, k, rng);
         double newCost = newSol.countConflicts();
 
         // choix de garder ou non ce voisin
@@ -194,19 +199,27 @@ Graph simulatedAnnealing(Graph& graph, int k, double initTemp, double coolingRat
             best_sol_encountered = newSol.clone();
             best_value_encountered = newCost;
         }
-        if ((i % 10) == 0){
-            temperature *= coolingRate;}
+        if ((i % 10) == 0) {
+            temperature *= coolingRate;
+        }
+        // Vérifier si le temps d'exécution dépasse la limite
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        auto elapsedTimeInSeconds = std::chrono::duration_cast<std::chrono::seconds>(currentTime - startTime).count();
+
+        if (elapsedTimeInSeconds >= maxExecutionTimeInSeconds) {
+            // Arrêter l'exécution et retourner la meilleure solution rencontrée jusqu'à présent
+            return best_sol_encountered;
+        }
     }
-std::cout << "nb d'iterations pour meilleure solution: " << index_best_sol << std::endl;
-std::cout << "nb d'iterations au dernier changement de solution courante: " << index_last_change << std::endl;
-std::cout << "Temperature finale: " << temperature << std::endl;
-return best_sol_encountered;
+    std::cout << "nb d'iterations pour meilleure solution: " << index_best_sol << std::endl;
+    std::cout << "nb d'iterations au dernier changement de solution courante: " << index_last_change << std::endl;
+    std::cout << "Temperature finale: " << temperature << std::endl;
+    return best_sol_encountered;
 }
 
 
 
 int main(int argc, char* argv[]) {
-
     try {
         std::string filename;
         int k = -1;  // Ne pas initialiser avec une valeur par défaut
@@ -246,8 +259,9 @@ int main(int argc, char* argv[]) {
         greedyColoring(graph, k);
 
         // Calcul du conflit dans le graphe colorié
-        std::cout << "Dans le graphe il y a : " << graph.countConflicts() << " conflit(s) en utilisant l'heuristique" << std::endl;
-        
+        std::cout << "Dans le graphe il y a : " << graph.countConflicts() << " conflit(s) en utilisant l'heuristique"
+                  << std::endl;
+
         // Utilisation du recuit simulé
 
         // Recuit simulée sans multi-threading
@@ -258,17 +272,20 @@ int main(int argc, char* argv[]) {
         auto end_time = std::chrono::high_resolution_clock::now();
 
         // Calculez la durée d'exécution en microsecondes (ou autre unité au choix)
-        std::chrono::duration<double> duration = std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time);        // Affichez le temps d'exécution
+        std::chrono::duration<double> duration = std::chrono::duration_cast<std::chrono::duration<double>>(
+                end_time - start_time);        // Affichez le temps d'exécution
         std::cout << "Temps d'execution un recuit simulee : " << duration.count() << " secondes" << std::endl;
 
-        std::cout << "Dans le graphe apres recuit il y a : " << test_annealing.countConflicts() << " conflit(s)" << std::endl;
+        std::cout << "Dans le graphe apres recuit il y a : " << test_annealing.countConflicts() << " conflit(s)"
+                  << std::endl;
 
         // Recuit simulée avec multi-threading
         // Stocke les différents résultats de chaque graphs
         std::vector<Graph> results(numThreads);
 
         // Fonction pour exécuter les recuit simulées
-        auto runSimulatedAnnealing = [&](int threadIndex, int initTemp, float coolingRate, int maxIter, int nb_changes) {
+        auto runSimulatedAnnealing = [&](int threadIndex, int initTemp, float coolingRate, int maxIter,
+                                         int nb_changes) {
             results[threadIndex] = simulatedAnnealing(graph, k, initTemp, coolingRate, maxIter, nb_changes);
         };
 
@@ -282,16 +299,18 @@ int main(int argc, char* argv[]) {
         }
 
         // Joindre tous les threads et attendre qu'ils finissent
-        for (auto& thread : threads) {
+        for (auto &thread: threads) {
             thread.join();
         }
 
         auto end_time_thread = std::chrono::high_resolution_clock::now();
 
         // Calculez la durée d'exécution en microsecondes (ou autre unité au choix)
-        std::chrono::duration<double> duration_thread = std::chrono::duration_cast<std::chrono::duration<double>>(end_time_thread - start_time_thread);
+        std::chrono::duration<double> duration_thread = std::chrono::duration_cast<std::chrono::duration<double>>(
+                end_time_thread - start_time_thread);
         // Affichez le temps d'exécution
-        std::cout << "Temps d'execution pour " << numThreads << " : " << duration_thread.count() << " secondes" << std::endl;
+        std::cout << "Temps d'execution pour " << numThreads << " : " << duration_thread.count() << " secondes"
+                  << std::endl;
 
 
         for (int i = 0; i < numThreads; ++i) {
@@ -299,11 +318,9 @@ int main(int argc, char* argv[]) {
             std::cout << "Conflits: " << results[i].countConflicts() << std::endl;
         }
 
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         std::cerr << "Erreur : " << e.what() << std::endl;
         return 1;
     }
-
     return 0;
 }
-
