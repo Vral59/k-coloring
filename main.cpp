@@ -236,7 +236,9 @@ void localResearch(Graph& graph, int k, int maxIter) {
             std::hash<std::thread::id>()(std::this_thread::get_id()));
     std::mt19937 rng(seed);
     std::uniform_int_distribution<int> distribution(0, graph.getNumNodes() - 1);
-
+    long long bestSolTime = 0;
+    auto startTime = std::chrono::high_resolution_clock::now();
+    int value = graph.countConflicts();
     for (int i = 0; i < maxIter; i++) {
         int valueRng = distribution(rng);
         Node& node = graph.getNodes()[valueRng];
@@ -279,7 +281,13 @@ void localResearch(Graph& graph, int k, int maxIter) {
                 graph.getConflictCount()[node.getID()]++;
             }
         }
+        if(value>graph.countConflicts()){
+            auto currentTime = std::chrono::high_resolution_clock::now();
+            bestSolTime = std::chrono::duration_cast<std::chrono::seconds>(currentTime - startTime).count();
+            value = graph.countConflicts();
+                }
     }
+    std::cout << "Time best sol local search " << bestSolTime << std::endl;
 }
 
 
@@ -333,7 +341,7 @@ int main(int argc, char* argv[]) {
             // Recuit simulée sans multi-threading
             // Enregistrez l'heure actuelle avant d'appeler la fonction
             auto start_time = std::chrono::high_resolution_clock::now();
-            Graph test_annealing = simulatedAnnealing(graph, k, 1000, 0.995, 75000, 1);
+            Graph test_annealing = simulatedAnnealing(graph, k, 1000, 0.995, 20, 1);
             // Enregistrez l'heure actuelle après l'exécution de la fonction
             auto end_time = std::chrono::high_resolution_clock::now();
 
@@ -347,7 +355,7 @@ int main(int argc, char* argv[]) {
 
 
             auto start_time_local = std::chrono::high_resolution_clock::now();
-            localResearch(test_annealing, k, 10000);
+            localResearch(test_annealing, k, 10000000);
             auto end_time_local = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> duration_local = std::chrono::duration_cast<std::chrono::duration<double>>(
                     end_time_local - start_time_local);
