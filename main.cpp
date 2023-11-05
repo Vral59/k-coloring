@@ -223,6 +223,64 @@ Graph simulatedAnnealing(Graph& graph, int k, double initTemp, double coolingRat
     return best_sol_encountered;
 }
 
+/**
+ * @brief Algorithme de recherche local, choisi à chaque tour un noeud aléatoirement et lui donne la couleur qui
+ * minimise les conflits.
+ * @param graph Graphe à colorier.
+ * @param k Le nombre de couleur utilisable.
+ * @param maxIter Le nombre maximum d'itération.
+ */
+void localResearch(Graph& graph, int k, int maxIter) {
+    unsigned seed = static_cast<unsigned>(
+            std::chrono::high_resolution_clock::now().time_since_epoch().count() +
+            std::hash<std::thread::id>()(std::this_thread::get_id()));
+    std::mt19937 rng(seed);
+    std::uniform_int_distribution<int> distribution(0, graph.getNumNodes() - 1);
+
+    for (int i = 0; i < maxIter; i++) {
+        int valueRng = distribution(rng);
+        Node& node = graph.getNodes()[valueRng];
+        std::vector<int> neighborColorCount(k, 0);
+        int oldColor = graph.getNodes()[valueRng].getColor();
+
+        // Compte les conflits du à chaque couleurs
+        for (int neighborID : node.getNeighbors()) {
+            int neighborColor = graph.getNodes()[neighborID].getColor();
+            if (neighborColor != -1) {
+                neighborColorCount[neighborColor]++;
+            }
+        }
+
+        // Récupère le nombre minimum de conflits
+        int minValue = *std::min_element(neighborColorCount.begin(), neighborColorCount.end());
+        std::vector<int> minColors;
+
+        // Crée la liste des couleurs possibles
+        for (int color = 0; color < k; color++) {
+            if (neighborColorCount[color] == minValue) {
+                minColors.push_back(color);
+            }
+        }
+
+        // Sélection aléatoire parmi les couleurs minimales
+        std::uniform_int_distribution<int> distributionMinColors(0, static_cast<int>(minColors.size()) - 1);
+        int idxMin = minColors[distributionMinColors(rng)];
+        node.setColor(idxMin);
+
+        // Mettez à jour conflictCount en conséquence
+        for (int neighborID : node.getNeighbors()) {
+            const Node& neighbor = graph.getNode(neighborID);
+            if (neighbor.getColor() == oldColor) {
+                graph.getConflictCount()[neighborID]--; // Réduction du conflit
+                graph.getConflictCount()[node.getID()]--;
+            }
+            if (neighbor.getColor() == idxMin) {
+                graph.getConflictCount()[neighborID]++; // Augmentation du conflit
+                graph.getConflictCount()[node.getID()]++;
+            }
+        }
+    }
+}
 
 
 int main(int argc, char* argv[]) {
@@ -260,31 +318,44 @@ int main(int argc, char* argv[]) {
         // Lecture du graphe depuis le fichier spécifié
         Graph graph = readGraphFromFile(filename);
 
-        // Utilisation de l'heuristique
-        // Colorier le graphe avec la valeur de k
-        greedyColoring(graph, k);
+        // Boucle pour lancer plusieurs test à la suite
+        for(int i = 0; i<1; i++){
+            // Utilisation de l'heuristique
+            // Colorier le graphe avec la valeur de k
+            greedyColoring(graph, k);
 
-        // Calcul du conflit dans le graphe colorié
-        std::cout << "Dans le graphe il y a : " << graph.countConflicts() << " conflit(s) en utilisant l'heuristique"
-                  << std::endl;
+            // Calcul du conflit dans le graphe colorié
+            std::cout << "Dans le graphe il y a : " << graph.countConflicts() << " conflit(s) en utilisant l'heuristique"
+                      << std::endl;
 
-        // Utilisation du recuit simulé
+            // Utilisation du recuit simulé
 
-        // Recuit simulée sans multi-threading
-        // Enregistrez l'heure actuelle avant d'appeler la fonction
-        auto start_time = std::chrono::high_resolution_clock::now();
-        Graph test_annealing = simulatedAnnealing(graph, k, 1000, 0.995, 75000, 1);
-        // Enregistrez l'heure actuelle après l'exécution de la fonction
-        auto end_time = std::chrono::high_resolution_clock::now();
+            // Recuit simulée sans multi-threading
+            // Enregistrez l'heure actuelle avant d'appeler la fonction
+            auto start_time = std::chrono::high_resolution_clock::now();
+            Graph test_annealing = simulatedAnnealing(graph, k, 1000, 0.995, 75000, 1);
+            // Enregistrez l'heure actuelle après l'exécution de la fonction
+            auto end_time = std::chrono::high_resolution_clock::now();
 
-        // Calculez la durée d'exécution en microsecondes (ou autre unité au choix)
-        std::chrono::duration<double> duration = std::chrono::duration_cast<std::chrono::duration<double>>(
-                end_time - start_time);        // Affichez le temps d'exécution
-        std::cout << "Temps d'execution un recuit simulee : " << duration.count() << " secondes" << std::endl;
+            // Calculez la durée d'exécution en microsecondes (ou autre unité au choix)
+            std::chrono::duration<double> duration = std::chrono::duration_cast<std::chrono::duration<double>>(
+                    end_time - start_time);
+            std::cout << "Temps d'execution un recuit simulee : " << duration.count() << " secondes" << std::endl;
 
-        std::cout << "Dans le graphe apres recuit il y a : " << test_annealing.countConflicts() << " conflit(s)"
-                  << std::endl;
+            std::cout << "Dans le graphe apres recuit il y a : " << test_annealing.countConflicts() << " conflit(s)"
+                      << std::endl;
 
+
+            auto start_time_local = std::chrono::high_resolution_clock::now();
+            localResearch(test_annealing, k, 10000);
+            auto end_time_local = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> duration_local = std::chrono::duration_cast<std::chrono::duration<double>>(
+                    end_time_local - start_time_local);
+            std::cout << "Temps d'execution de la recherche local : " << duration_local.count() << " secondes" << std::endl;
+
+            std::cout << "Dans le graphe apres recherche local il y a : " << test_annealing.countConflicts() << " conflit(s)"
+                      << std::endl;
+        }
         // Recuit simulée avec multi-threading
         // Stocke les différents résultats de chaque graphs
 //        std::vector<Graph> results(numThreads);
