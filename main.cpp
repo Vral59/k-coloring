@@ -6,7 +6,6 @@
 #include <string>
 #include <stdexcept>
 #include <random>
-#include <thread>
 #include <chrono>
 #include "include/Node.h"
 #include "include/Graph.h"
@@ -38,7 +37,7 @@ Graph readGraphFromFile(const std::string& filename) {
             std::istringstream iss(line);
             iss.ignore(7);
             if (iss >> numNodes >> numEdges) {
-                std::cout << "numNodes: " << numNodes << ", numEdges: " << numEdges << std::endl;
+                std::cout << "Nombre de noeud: " << numNodes << ", Nombre d'arrete: " << numEdges << std::endl;
             } else {
                 std::cerr << "Impossible d'extraire numNodes et numEdges." << std::endl;
             }
@@ -146,12 +145,10 @@ void greedyColoring(Graph& graph, int k) {
  * @param coolingRate Le coefficient de refroidissement.
  * @param maxIter Le nombre maximum d'itération.
  * @param nb_changes Nombre de changement de couleur dans le voisinage.
+ * @param maxExecutionTimeInSeconds Temps execution maximum de la fonction.
  * @return Le graphe colorié à la fin de l'algorithme.
  */
-Graph simulatedAnnealing(Graph& graph, int k, double initTemp, double coolingRate, int maxIter, int nb_changes) {
-
-    // Définir la durée maximale d'exécution à 10 minutes (600 secondes)
-    const int maxExecutionTimeInSeconds = 6000;
+Graph simulatedAnnealing(Graph& graph, int k, double initTemp, double coolingRate, int maxIter, int nb_changes, int maxExecutionTimeInSeconds) {
 
     //initialisation des paramètres et de la solution courante
     Graph currentSol = graph.clone();
@@ -164,8 +161,7 @@ Graph simulatedAnnealing(Graph& graph, int k, double initTemp, double coolingRat
     long long bestSolTime = 0;
     // Creation d'une seed aléatoire différente dans chaque thread
     unsigned seed = static_cast<unsigned>(
-            std::chrono::high_resolution_clock::now().time_since_epoch().count() +
-            std::hash<std::thread::id>()(std::this_thread::get_id()));
+            std::chrono::high_resolution_clock::now().time_since_epoch().count());
     std::mt19937 rng(seed);
     std::uniform_real_distribution<double> distribution(0.0, 1.0);
 
@@ -212,12 +208,16 @@ Graph simulatedAnnealing(Graph& graph, int k, double initTemp, double coolingRat
 
         if (elapsedTimeInSeconds >= maxExecutionTimeInSeconds) {
             // Arrêter l'exécution et retourner la meilleure solution rencontrée jusqu'à présent
+            std::cout << "Nombre d'iterations pour meilleure solution: " << index_best_sol << std::endl;
+            std::cout << "Temps pour meilleure solution: " << bestSolTime << std::endl;
+            std::cout << "Nombre d'iterations au dernier changement de solution courante: " << index_last_change << std::endl;
+            std::cout << "Temperature finale: " << temperature << std::endl;
             return best_sol_encountered;
         }
     }
-    std::cout << "nb d'iterations pour meilleure solution: " << index_best_sol << std::endl;
+    std::cout << "Nombre d'iterations pour meilleure solution: " << index_best_sol << std::endl;
     std::cout << "Temps pour meilleure solution: " << bestSolTime << std::endl;
-    std::cout << "nb d'iterations au dernier changement de solution courante: " << index_last_change << std::endl;
+    std::cout << "Nombre d'iterations au dernier changement de solution courante: " << index_last_change << std::endl;
     std::cout << "Temperature finale: " << temperature << std::endl;
 
     return best_sol_encountered;
@@ -232,8 +232,7 @@ Graph simulatedAnnealing(Graph& graph, int k, double initTemp, double coolingRat
  */
 void localResearch(Graph& graph, int k, int maxIter) {
     unsigned seed = static_cast<unsigned>(
-            std::chrono::high_resolution_clock::now().time_since_epoch().count() +
-            std::hash<std::thread::id>()(std::this_thread::get_id()));
+            std::chrono::high_resolution_clock::now().time_since_epoch().count());
     std::mt19937 rng(seed);
     std::uniform_int_distribution<int> distribution(0, graph.getNumNodes() - 1);
 
@@ -287,8 +286,6 @@ int main(int argc, char* argv[]) {
     try {
         std::string filename;
         int k = -1;  // Ne pas initialiser avec une valeur par défaut
-        unsigned int numThreads = std::thread::hardware_concurrency();  // Par défaut, utilisez le nombre maximum de threads
-
         // Recherche de l'argument --file
         for (int i = 1; i < argc; ++i) {
             // Recherche de l'argument --file
@@ -299,16 +296,7 @@ int main(int argc, char* argv[]) {
             if (std::string(argv[i]) == "--k" && i + 1 < argc) {
                 k = std::stoi(argv[i + 1]);
             }
-            // Recherche de l'argument --thread
-            if (std::string(argv[i]) == "--thread" && i + 1 < argc) {
-                int threadValue = std::stoi(argv[i + 1]);
-                if (threadValue > 0 && threadValue < numThreads) {
-                    numThreads = threadValue;
-                }
-            }
         }
-
-        std::cout << "Vous utilisez " << numThreads << " thread(s)" << std::endl;
 
         if (filename.empty() || k == -1) {
             std::cerr << "Utilisation : " << argv[0] << " --file <nom_du_fichier> --k <valeur_de_k>" << std::endl;
@@ -318,82 +306,36 @@ int main(int argc, char* argv[]) {
         // Lecture du graphe depuis le fichier spécifié
         Graph graph = readGraphFromFile(filename);
 
-        // Boucle pour lancer plusieurs test à la suite
-        for(int i = 0; i<1; i++){
-            // Utilisation de l'heuristique
-            // Colorier le graphe avec la valeur de k
-            greedyColoring(graph, k);
+        // Utilisation de l'heuristique et colorier le graphe avec k couleur
+        greedyColoring(graph, k);
 
-            // Calcul du conflit dans le graphe colorié
-            std::cout << "Dans le graphe il y a : " << graph.countConflicts() << " conflit(s) en utilisant l'heuristique"
-                      << std::endl;
+        // Calcul du conflit dans le graphe colorié
+        std::cout << "Dans le graphe il y a : " << graph.countConflicts() << " conflit(s) en utilisant l'heuristique"
+                  << std::endl;
 
-            // Utilisation du recuit simulé
+        // Utilisation du recuit simulé
+        auto start_time = std::chrono::high_resolution_clock::now();
+        Graph annealing = simulatedAnnealing(graph, k, 1000, 0.995, 75000, 1, 60);
+        auto end_time = std::chrono::high_resolution_clock::now();
 
-            // Recuit simulée sans multi-threading
-            // Enregistrez l'heure actuelle avant d'appeler la fonction
-            auto start_time = std::chrono::high_resolution_clock::now();
-            Graph test_annealing = simulatedAnnealing(graph, k, 1000, 0.995, 75000, 1);
-            // Enregistrez l'heure actuelle après l'exécution de la fonction
-            auto end_time = std::chrono::high_resolution_clock::now();
+        // Calculez la durée d'exécution en secondes
+        std::chrono::duration<double> duration = std::chrono::duration_cast<std::chrono::duration<double>>(
+                end_time - start_time);
+        std::cout << "Temps d'execution un recuit simulee : " << duration.count() << " secondes" << std::endl;
 
-            // Calculez la durée d'exécution en microsecondes (ou autre unité au choix)
-            std::chrono::duration<double> duration = std::chrono::duration_cast<std::chrono::duration<double>>(
-                    end_time - start_time);
-            std::cout << "Temps d'execution un recuit simulee : " << duration.count() << " secondes" << std::endl;
+        std::cout << "Dans le graphe apres recuit il y a : " << annealing.countConflicts() << " conflit(s)"
+                  << std::endl;
 
-            std::cout << "Dans le graphe apres recuit il y a : " << test_annealing.countConflicts() << " conflit(s)"
-                      << std::endl;
+        // Utilisation de la recherche local
+        auto start_time_local = std::chrono::high_resolution_clock::now();
+        localResearch(annealing, k, 500000);
+        auto end_time_local = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> duration_local = std::chrono::duration_cast<std::chrono::duration<double>>(
+                end_time_local - start_time_local);
+        std::cout << "Temps d'execution de la recherche local : " << duration_local.count() << " secondes" << std::endl;
 
-
-            auto start_time_local = std::chrono::high_resolution_clock::now();
-            localResearch(test_annealing, k, 10000);
-            auto end_time_local = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> duration_local = std::chrono::duration_cast<std::chrono::duration<double>>(
-                    end_time_local - start_time_local);
-            std::cout << "Temps d'execution de la recherche local : " << duration_local.count() << " secondes" << std::endl;
-
-            std::cout << "Dans le graphe apres recherche local il y a : " << test_annealing.countConflicts() << " conflit(s)"
-                      << std::endl;
-        }
-        // Recuit simulée avec multi-threading
-        // Stocke les différents résultats de chaque graphs
-//        std::vector<Graph> results(numThreads);
-//
-//        // Fonction pour exécuter les recuit simulées
-//        auto runSimulatedAnnealing = [&](int threadIndex, int initTemp, float coolingRate, int maxIter,
-//                                         int nb_changes) {
-//            results[threadIndex] = simulatedAnnealing(graph, k, initTemp, coolingRate, maxIter, nb_changes);
-//        };
-//
-//        std::vector<std::thread> threads;
-//
-//        // Lancer les différents threads
-//        threads.reserve(numThreads);
-//        auto start_time_thread = std::chrono::high_resolution_clock::now();
-//        for (int i = 0; i < numThreads; ++i) {
-//            threads.emplace_back(runSimulatedAnnealing, i, 1000, 0.999, 75000, 1);
-//        }
-//
-//        // Joindre tous les threads et attendre qu'ils finissent
-//        for (auto &thread: threads) {
-//            thread.join();
-//        }
-//
-//        auto end_time_thread = std::chrono::high_resolution_clock::now();
-//
-//        // Calculez la durée d'exécution en microsecondes (ou autre unité au choix)
-//        std::chrono::duration<double> duration_thread = std::chrono::duration_cast<std::chrono::duration<double>>(
-//                end_time_thread - start_time_thread);
-//        // Affichez le temps d'exécution
-//        std::cout << "Temps d'execution pour " << numThreads << " : " << duration_thread.count() << " secondes"
-//                  << std::endl;
-//
-//
-//        for (int i = 0; i < numThreads; ++i) {
-//            std::cout << "Resultat du thread " << i << ": ";
-//            std::cout << "Conflits: " << results[i].countConflicts() << std::endl;
-//        }
+        std::cout << "Dans le graphe apres recuit et recherche local il y a : " << annealing.countConflicts() << " conflit(s)"
+                  << std::endl;
 
     } catch (const std::exception &e) {
         std::cerr << "Erreur : " << e.what() << std::endl;

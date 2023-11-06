@@ -111,8 +111,6 @@ public:
      * @param k Le nombre de couleur différents.
      * @param rng Générateur de nombres aléatoires (avec une valeur par défaut).
      */
-    void recolorNodes(int numChange, int k, std::mt19937 rng);
-
     void recolorAllNodes(int numChange, int k, std::mt19937 rng);
 
 private:
