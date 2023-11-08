@@ -6,6 +6,8 @@ Ce projet implémente une résolution du problème de coloration de graphes en u
 
 - Lecture d'un graphe au format DIMACS depuis un fichier.
 - Coloration du graphe en utilisant un algorithme glouton.
+- Coloration du graphe en utilisant un recuit simulé.
+- Coloration du graphe en utilisant une recherche locale.
 - Affichage du graphe coloré.
 - Calcul du nombre de conflits dans le graphe coloré.
 
